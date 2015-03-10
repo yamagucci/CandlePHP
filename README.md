@@ -10,7 +10,7 @@ php-mbstring,php-mysql,php-pdoなどの設定は必要になり次第適宜設�
 
 CandlePHP のアーカイブを /var/www/html に展開してください。
 ファイルシステム上の開発用の設定は次のようになります:
-
+```
 /var/www/html/
     CandlePHP/
         Controller/
@@ -19,22 +19,23 @@ CandlePHP のアーカイブを /var/www/html に展開してください。
         View/
         webroot/
         README
-
+```
 次にhttpd.confの設定をしてください。
 DocumentRootをCandlePHPフォルダの中のwebrootというディレクトリに指定してください。
 またwebrootディレクトリ内では必ずindex.phpにアクセスさせるように設定します。
-
+```
 sudo vi /etc/httpd/conf/httpd.conf
+```
 ```
 DocumentRoot "/var/www/html/CandlePHP/webroot"
 
 <Directory /var/www/html/CandlePHP/webroot>
     Options FollowSymLinks
     AllowOverride All
-	RewriteEngine on
-	RewriteCond %{REQUEST_FILENAME} !-d
-	RewriteCond %{REQUEST_FILENAME} !-f
-	RewriteRule . index.php [L]
+    RewriteEngine on
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule . index.php [L]
 </Directory>
 ```
 
@@ -47,21 +48,25 @@ Hello CandlePHP !!
 
 
 ## CandlePHPのフォルダ構造
+フォルダの構造をフォルダごとに説明していきましょう。
+```
 CandlePHP/
     Controller/
     Library/
     Model/
     View/
     webroot/
+```
 
 - webroot
+```
 webroot/
     css/
     image/
     js/
     dispatch.php
     index.php
-
+```
 webrootはウェブに公開される部分です。
 ウェブに用いるcss,image,jsの各種ファイルはこのディレクトリ内の指定されたフォルダの中に入れます。
 index.phpは基本的にはあらゆるurlリクエストの初めに呼ばれるファイルです。
@@ -71,11 +76,12 @@ index.phpはリクエストされてきたurlに応じて呼ぶファイルを�
 dispatch.phpはそのリクエストの振り分けをするクラスが実装されていて、index.php内で実行されます。
 
 - Model
+```
 Model/
     AppModel.php
     .
     .
-
+```
 Modelはデータベースと通信を行い、データを取得、保存、更新、削除する役割があります。
 ModelはControllerに取得したデータを渡すことや、データベースとのやりとりが成功したかどうかを伝えることができます。
 Modelの基本的な機能はAppModel.phpというクラスに書いてあるので、実際に使用する際にはAppModel.phpを継承したファイルをModelディレクトリの下（AppModel.phpと同じディレクトリ）に作成していきます。
@@ -84,16 +90,18 @@ Modelは一つにつき一つのデータベースのテーブルを操作する
 
 
 - Controller
+```
 Controller/
     AppController.php
     .
     .
-
+```
 ControllerはModelから取得してきたデータをViewに受け渡す役割があります。
 Controllerの基本的な機能はAppController.phpというクラスに書いてあるので、実際に使用する際にはAppController.phpを継承したファイルをControllerディレクトリの下（AppController.phpと同じディレクトリ）に作成していきます。
 Controllerは複数のモデルとやりとりをすることができるので一つでもよいですが、基本的にはモデルごとに作成したほうが便利です。
 
 - View
+```
 View/
     home/
         index.php
@@ -101,7 +109,7 @@ View/
         .
     .
     .
-
+```
 ViewはControllerから渡されたデータをもとにウェブページとして表示するHTMLを生成するページです。
 controller名ごとにフォルダを作りその中にaction名.phpというファイルを作成していきます。
 http://www.example.com
@@ -116,47 +124,57 @@ Controller側で$this->set()を用いて'Hello CandlePHP !!'という文字列�
 View側に＄messageという変数で渡していることがわかります。
 
 Controller側
+```
 $this->set('message','Hello CandlePHP !!');
+```
 View側
+```
 <h1><?php echo $message;?></h1>
-
+```
 
 ## データベース設定
 データベースの設定はwebrootのindex.phpにて行います。
 
 // データベース接続情報設定
+```
 $connInfo = array(
     'host'     => 'localhost',
     'dbname'   => 'sampledb',
     'username'   => 'root',
     'password' => 'root'
 );
-
+```
 データベースの設定は何もModelを利用していないときにはデータベースとやりとりをしないので接続エラーを表示することはありません。ではデータベースを利用してデータを表示してみましょう。
 
 記事（Post）を表示するページを作成していきます。
 
 ### テーブルの作成
 まずテーブルを作成しましょう。　データベースを作成していない場合は
+```
 CREATE DATABASE sampledb DEFAULT CHARACTER SET utf8;
+```
 として作成しましょう。
 
 postsテーブルを作成します。
 テーブルの命名には特に制限はないですが、小文字の複数形がよいでしょう。
+```
 CREATE TABLE posts (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(255),
     body VARCHAR(255)
 );
-
+```
 テスト用に記事をいくつか入れておきます
+```
 INSERT INTO posts (title,body)VALUES ('タイトル１', '記事の本文です。');
 INSERT INTO posts (title,body)VALUES ('タイトル２', 'これが本文です。');
 INSERT INTO posts (title,body)VALUES ('タイトル３', 'これは記事の本文です。');
-
+```
 とりあえずコマンドで
+```
 use sampledb;
 select *from posts;
+```
 としてテスト用記事の一覧が保湯時されているか確認してみましょう。
 これでテーブルの作成は完了です。
 
@@ -164,7 +182,7 @@ select *from posts;
 
 データベースを利用するときにはModelを作成しなければなりません。
 次のように作成します。
-
+```
 <!-- /Model/Post.php -->
 <?php
 class Post extends AppModel
@@ -172,7 +190,7 @@ class Post extends AppModel
     protected $name = 'posts';
 }
 ?>
-
+```
 AppModelを継承し、利用するデータベース名(ここではposts)を$nameに設定します。
 Modelの名前は特に制約はありませんが、基本的には最初だけ大文字の単数形の単語がよいでしょう。
 
@@ -188,6 +206,7 @@ ControllerからModelにアクセスしてデータを持って来てみまし�
 
 試しにPostモデルで設定をしてみましょう。
 次のように設定します。
+```
 <!-- /Controller/PostsController.php -->
 <?php
 class PostsController extends AppController
@@ -203,7 +222,7 @@ class PostsController extends AppController
         $this->Post=null;
     }
 ?>
-
+```
 beforeAction()とafterAction()については後ほど説明します。
 
 ### Actionの実装
@@ -217,7 +236,7 @@ http://www.example.com/posts
 でも同じページが表示されるようになるかと思います。
 
 ではまずindexメソッドを実装済みのPostsController.phpを見てみましょう。
-
+```
 <!-- /Controller/PostsController.php -->
 <?php
 class PostsController extends AppController
@@ -239,10 +258,12 @@ class PostsController extends AppController
         $this->set('result',$posts);
     }
 ?>
-
+```
 ControllerではAction名のメソッドを必ずよびだそうとします。
 そのため、何も操作を行わない場合でも
+```
 public function index(){}
+```
 だけは実装してください。
 
 Action名のメソッドを呼び出す前にbeforeAction()
@@ -257,16 +278,11 @@ indexメソッドの中身を見ていきましょう。
 すべてのモデルには基本的ないくつかのクエリがメソッドとしてあらかじめ用意されています。
 それはAppModel.phpに記述されています。
 
-public function add($data)
-一件データを追加（保存）する
-public function getAll()
-データを全件取得する
-public function getById($id)
-指定したidのデータを一件取得する
-public function deleteById($id)
-指定したidのデータを一件削除する
-public function editById($data,$id)
-指定したidのデータを$dataに更新する
+- public function add($data) 一件データを追加（保存）する
+- public function getAll() データを全件取得する
+- public function getById($id) 指定したidのデータを一件取得する
+- public function deleteById($id) 指定したidのデータを一件削除する
+- public function editById($data,$id) 指定したidのデータを$dataに更新する
 
 今回は全件表示させるのでgetAll()を使います。
 $this->Post->getAll()とすると連想配列の形のレコードが配列となって取得できます。
@@ -274,18 +290,20 @@ $postsにはそれが代入されています。
 これをViewに渡すにはsetというメソッドを呼ぶことでできます。
 これはすべてのControllerで使用することのできるメソッドで、
 AppController.phpに実装されています。
-
+```
 protected function set($key,$value)
+```
 $valueを$keyという変数名でViewに渡す。
 
 よって、この場合はViewページ全件の記事の配列を$resultという変数で渡していることになります。
+```
 $this->set('result',$posts);
-
+```
 ### Viewの実装
 
 最後にControllerから渡された$resultという変数の情報を表示してみましょう。
 foreachで繰り返し表示するような処理のコードを書いてみると次のようになります。
-
+```
 <!-- /View/posts/index.php -->
 <html>
 <head>
@@ -314,10 +332,9 @@ foreachで繰り返し表示するような処理のコードを書いてみる�
 </table>
 </body>
 </html>
-
+```
 この時点で、ブラウザから http://www.example.com/posts/index を開いてみてください。 タイトルと投稿内容のテーブル一覧がまとめられているビューが表示されるはずです。
 
 これで基本的なチュートリアルは終わりますが、このまま読み進めていきたい場合は
 /Library/documents
 に書いてありますので参照していただけるとよいと思います。
-

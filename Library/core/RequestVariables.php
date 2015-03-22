@@ -36,16 +36,6 @@ abstract class RequestVariables
         }
         return true;
     }
-    // 指定のキーが全て存在するか確認
-    // public function hasAll(array $keys)
-    // {
-    //     foreach ($keys as $key) {
-    //         if (false == $this->has($key)) {
-    //             return false;
-    //         }
-    //     }
-    //     return true;
-    // }
 }
 
 ?>

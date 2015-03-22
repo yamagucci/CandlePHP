@@ -10,17 +10,10 @@ class Dispatcher
 
     public function dispatch()
     {
-        // パラメーター取得（末尾の / は削除）
-        $stringparams = explode("/CandlePHP/", $_SERVER['REQUEST_URI']);
-        if (!isset($stringparams[1]))exit();
-        $stringparams = explode("?", $stringparams[1]);
-        $param = ereg_replace('/?$', '',$stringparams[0] );
-        $params = array();
-        if ('' != $param) {
-            $params = explode('/', $param);
-        }
+        $urlparams=$this->getUrlParams();
+
         // １番目のパラメーターをcontrollerとして取得
-        $controller=(0 < count($params))?$params[0]:'home';
+        $controller=($urlparams[0]!='')?$urlparams[0]:'home';
         // １番目のパラメーターをもとにコントローラークラスインスタンス取得
         $controllerInstance = $this->getControllerInstance($controller);
         if (null == $controllerInstance) {
@@ -28,16 +21,15 @@ class Dispatcher
             exit;
         }
         // 2番目のパラメーターをactionとして取得
-        $action=(1 < count($params))?$params[1]:'index';
+        $action=(1 < count($urlparams))?$urlparams[1]:'index';
        // アクションメソッドの存在確認
         if (false == method_exists($controllerInstance, $action)) {
           header("HTTP/1.0 404 Not Found");
           exit;
         }
 
-
         // 3番目以降はパラメーターなのでその配列として取得
-        $actionParams=array_slice($params, 2);
+        $actionParams=array_slice($urlparams, 2);
 
         // コントローラー初期設定
         $controllerInstance->setSystemRoot($this->sysRoot);
@@ -46,6 +38,21 @@ class Dispatcher
         // 処理実行
         $controllerInstance->run();
     }
+    public function getUrlParams()
+    {
+        // パラメーター取得（末尾の / は削除）
+        $urlandquerystring = explode("?", $_SERVER['REQUEST_URI']);
+        // クエリ文字列を取り除く
+        $urlstring = $urlandquerystring[0];
+        // urlの前後についている/を取り除く
+        $urlstring = ereg_replace('/?$', '',$urlstring);
+        $urlstring = ereg_replace('^/?', '',$urlstring);
+        // urlの文字列の中に含まれている/で文字列を分割してcontroller,action,parameterを取得する
+        $urlparams = explode("/", $urlstring);
+        return $urlparams;
+    }
+
+
     // コントローラークラスのインスタンスを取得
     private function getControllerInstance($controller_name)
     {

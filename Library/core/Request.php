@@ -50,6 +50,8 @@ class Request
         }
         return $this->_input->get($key);
     }
+
+    // urlリクエストで送られてきた第３パラメーター以降、すなわちアクションのパラメーターを配列の形で取得します。
     public function getAction($key = null)
     {
         if (null === $key) {

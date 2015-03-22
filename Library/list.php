@@ -1,3 +1,3 @@
 <?php
-require_once 'core/list.php';
+require_once 'Core/list.php';
 ?>

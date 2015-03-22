@@ -15,16 +15,21 @@ class AppModel{
         $this->initDb();
     }
     public function initDb(){
-        $this->db = new PDO(
-            sprintf(
-                "mysql:dbname=%s;host=%s",
-                self::$connInfo['dbname'],
-                self::$connInfo['host']
-            ),
-            self::$connInfo['username'],
-            self::$connInfo['password']
-        );
-        $this->db->query('SET NAMES utf8');
+        try{
+            $this->db = new PDO(
+                sprintf(
+                    "mysql:dbname=%s;host=%s",
+                    self::$connInfo['dbname'],
+                    self::$connInfo['host']
+                ),
+                self::$connInfo['username'],
+                self::$connInfo['password']
+            );
+            $this->db->query('SET NAMES utf8');
+        }catch (PDOException $e){
+            print('データベース接続エラー:'.$e->getMessage());
+            die();
+        }
     }
     public static function setConnectionInfo($connInfo){
         self::$connInfo = $connInfo;
@@ -120,7 +125,7 @@ class AppModel{
             implode(',', $fields),
             $this->whereStringWithParams($params)
         );
-        var_dump($sql);
+        // var_dump($sql);
         $this->throwSQL($sql,$data);
         return $this->res;        
     }

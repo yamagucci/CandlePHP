@@ -13,7 +13,7 @@ require_once ROOT_PATH.'/Library/list.php';
 // データベース接続情報設定
 $connInfo = array(
     'host'     => 'localhost',
-    'dbname'   => 'sampledb',
+    'dbname'   => 'kenshu',
     'username'   => 'root',
     'password' => 'root'
 );

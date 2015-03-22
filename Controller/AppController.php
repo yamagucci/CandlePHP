@@ -5,22 +5,33 @@ abstract class AppController
     protected $systemRoot;
     protected $controller;
     protected $action;
-    protected $request = array();
-    protected $response = array();
+    protected $request;
+    protected $response;
     protected $view_path;
-    protected $view_data = array();
+    protected $view_data;
     protected $uses = array();
-    protected $components = array();
-    protected $instances = array();
     protected $method;
-    protected $layout='default';
+    protected $Auth;
+    // $actionParams
 
     // コンストラクタ
     public function __construct()
     {
         $this->response = array();
         $this->method = $_SERVER['REQUEST_METHOD'];
+        $this->Auth = $this->initAuth();
     }
+    public function initAuth()
+    {
+        session_start();
+        $isLoggedIn=isset($_SESSION["username"]);
+        $this->set('isLoggedIn',$isLoggedIn);
+        $user_id=($isLoggedIn)?$_SESSION["id"]:0;
+        $this->set('user_id',$user_id);
+        $username=($isLoggedIn)?$_SESSION["username"]:'NO NAME';
+        $this->set('username',$username);
+        session_write_close();
+    } 
     // システムのルートディレクトリパスを設定
     public function setSystemRoot($path)
     {
@@ -40,94 +51,55 @@ abstract class AppController
     // 処理実行
     public function run()
     {
-        // コンポーネンツの読み込み
-        $this->loadComponents();
-        // モデルの読み込み
-        $this->loadModels();
-        // 共通前処理
-        $this->beforeAction();
-        // アクションメソッド
-        $this->callAction();
-        // 共通後処理
-        $this->afterAction();
-        // 読み込んだモデルとコンポーネンツの破棄
-        $this->destroyInstances();
-        // 表示
-        $this->render();
-    }
-    public function loadComponents()
-    {
-        foreach ($this->components as $componentName) {
-            $className = sprintf('%sComponent',$componentName);
-            $fileName = sprintf('%s/Library/Component/%s.php', $this->systemRoot,$className);
-            $this->setInstance($fileName,$componentName,$className);
+        try {
+            // モデルの読み込み
+            $this->setModels();
+            // 共通前処理
+            $this->beforeAction();
+            // アクションメソッド
+            $methodName = $this->action;
+            $this->$methodName(); 
+            // 共通後処理
+            $this->afterAction();
+            // 表示
+            $this->render();
+        
+        } catch (Exception $e) {
+            // ログ出力等の処理を記述
         }
     }
     // モデルクラスの読み込み
-    protected function loadModels()
+    protected function setModels()
     {
         foreach ($this->uses as $className) {
-            $fileName = sprintf('%s/Model/%s.php', $this->systemRoot, $className);
-            $this->setInstance($fileName,$className,$className);
+            $classFile = sprintf('%s/Model/%s.php', $this->systemRoot, $className);
+            if (false == file_exists($classFile)){
+                continue;
+            }
+            require_once $classFile;
+            // if (false == class_exists($className)){
+            //     continue;   
+            // }
+            // $this->set($className,new $className());
         }
     }
-    // コンポーネントとモデルの読み込み
-    protected function setInstance($fileName,$key,$className)
-    {
-        if (false == file_exists($fileName)){
-            continue;
-        }
-        require_once $fileName;
-        if (false == class_exists($className)){
-            continue;   
-        }
-        $this->__set($key,new $className());
-    }
-
-
     // 共通前処理（オーバーライド前提）
     protected function beforeAction()
     {
         
-    }
-    public function callAction()
-    {
-        $method=$this->action;
-        $params=$this->request->getAction();
-        switch (count($params)) {
-            case 0:
-                return $this->{$method}();
-            case 1:
-                return $this->{$method}($params[0]);
-            case 2:
-                return $this->{$method}($params[0], $params[1]);
-            case 3:
-                return $this->{$method}($params[0], $params[1], $params[2]);
-            case 4:
-                return $this->{$method}($params[0], $params[1], $params[2], $params[3]);
-            case 5:
-                return $this->{$method}($params[0], $params[1], $params[2], $params[3], $params[4]);
-            default:
-                return call_user_func_array(array(&$this, $method), $params);
-        }
     }
     // 共通後処理（オーバーライド前提）
     protected function afterAction()
     {
         
     }
-    public function destroyInstances()
-    {
-        foreach ($this->instances as $key => $value ) {
-            unset($this->instances[$key]);
-        }
-    }
     // ビューに渡すデータをビューに渡して表示
     private function render()
     {
-        $viewRenderer=new ViewRenderer($this->view_data,$this->view_path,$this->getRenderLayoutPath());
-        $viewRenderer->setSystemRoot($this->systemRoot);
-        $viewRenderer->render();
+        foreach ($this->view_data as $key => $value) {
+            $$key=$value;
+        }
+        require_once $this->view_path;
     }
     // ビューに渡すデータを設定
     protected function set($key,$value)
@@ -135,22 +107,13 @@ abstract class AppController
         $this->view_data[$key]=$value;
     }
     // ビューのパスの設定
-    protected function setRenderViewPath($action)
+    protected function setRenderView($action)
     {
         $this->view_path = sprintf(
             '%s/View/%s/%s.php',
             $this->systemRoot,
             $this->controller,
             $action
-        );
-    }
-    // ビューのパスの設定
-    protected function getRenderLayoutPath()
-    {
-        return sprintf(
-            '%s/View/Layouts/%s.php',
-            $this->systemRoot,
-            $this->layout
         );
     }
     // Jsonのレスポンスを返す
@@ -172,23 +135,6 @@ abstract class AppController
         foreach ($params as $key => $value) {
             $this->response[$key]=$value;
         }
-    }
-    public function __set($name, $value)
-    {
-        if (in_array($name,$this->uses)) {
-            $this->instances[$name] = $value;
-        }
-        if (in_array($name,$this->components)) {
-            $this->instances[$name] = $value;
-        }
-    }
-
-    public function __get($name)
-    {
-        if (array_key_exists($name, $this->instances)) {
-            return $this->instances[$name];
-        }
-        return null;
     }
 }
 ?>
